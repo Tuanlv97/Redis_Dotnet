@@ -1,5 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc.Filters;
+﻿using DemoRedis.Configuration;
+using DemoRedis.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace DemoRedis.Attributes
@@ -13,9 +20,49 @@ namespace DemoRedis.Attributes
             _timeToLiveSeconds = timeToLiveSeconds;
         }
 
-        public Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            throw new NotImplementedException();
+            var cacheConfiguration = context.HttpContext.RequestServices.GetRequiredService<RedisConfiguration>();
+
+            if (!cacheConfiguration.Enabled)
+            {
+                await next();
+                return;
+            }
+
+            var cacheService = context.HttpContext.RequestServices.GetRequiredService<IResponseCacheService>();
+
+            var cacheKey = GenerateCacheKeyFormRequest(context.HttpContext.Request);
+            var cacheResponse = await cacheService.GetCacheResponseAsync(cacheKey);
+            if (!string.IsNullOrEmpty(cacheResponse))
+            {
+                var contentResult = new ContentResult
+                {
+                    Content = cacheResponse,
+                    ContentType = "application/json",
+                    StatusCode = 200
+                };
+                context.Result = contentResult;
+                return;
+            }
+
+            var excutedContext = await next();
+
+            if (excutedContext.Result is OkObjectResult objectResult)
+                await cacheService.SetCacheReponseAsync(cacheKey, objectResult.Value, TimeSpan.FromSeconds(_timeToLiveSeconds));
+
+
+        }
+        private static string GenerateCacheKeyFormRequest(HttpRequest request)
+        {
+            var keyBuilder = new StringBuilder();
+            keyBuilder.Append($"{request.Path}");
+
+            foreach (var (key, value) in request.Query.OrderBy(x => x.Key))
+            {
+                keyBuilder.Append($"|{key}--{value}");
+            }
+            return keyBuilder.ToString();
         }
     }
 }
