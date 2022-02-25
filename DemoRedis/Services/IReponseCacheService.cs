@@ -7,5 +7,6 @@ namespace DemoRedis.Services
     {
         Task SetCacheReponseAsync(string cacheKey, object response, TimeSpan timeOut);
         Task<string> GetCacheResponseAsync(string cacheKey);
+        Task RemoveCacheResponseAsync(string pattern);
     }
 }

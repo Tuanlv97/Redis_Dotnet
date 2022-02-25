@@ -7,6 +7,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="8.0.4" />
+    <PackageReference Include="StackExchange.Redis.Extensions.Core" Version="8.0.4" />
+    <PackageReference Include="StackExchange.Redis.Extensions.Newtonsoft" Version="8.0.4" />
   </ItemGroup>
 
 </Project>

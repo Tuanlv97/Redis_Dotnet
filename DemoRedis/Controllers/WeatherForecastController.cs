@@ -1,9 +1,9 @@
 ﻿using DemoRedis.Attributes;
+using DemoRedis.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace DemoRedis.Controllers
 {
@@ -11,29 +11,34 @@ namespace DemoRedis.Controllers
     [Route("[Controller]")]
     public class WeatherForecastController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-            "Freezing","Brackcing", "Chilly","Cool", "Mild","Balmy","Hot", "Sweltering","Scorching"
-        };
-
         private readonly ILogger<WeatherForecastController> _logger;
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        private readonly IResponseCacheService _responseCacheService;
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IResponseCacheService responseCacheService)
         {
             _logger = logger;
+            _responseCacheService = responseCacheService;
         }
 
 
-        [HttpGet]
-        [Cache(100)]
-        public IEnumerable<WeatherForecast> Get()
+        [HttpGet("getall")]
+        [Cache(1000)]
+        public async Task<IActionResult> GetAllAsync()
         {
-            var rng = new Random();
-            return Enumerable.Range(1, 5).Select(x => new WeatherForecast
+            var result = new List<WeatherForecast>()
             {
-                Date = DateTime.Now.AddDays(x),
-                TemperatureC = rng.Next(-20, 55),
-                Summary = Summaries[rng.Next(Summaries.Length)]
-            });
+                new WeatherForecast() { Id = 1 ,Name = "Lê Anh Tuấn 37", DateOfBirhtDay ="20/01/1997"},
+                new WeatherForecast() { Id = 2, Name = "Lê Anh Tuấn 37", DateOfBirhtDay = "20/01/1996" },
+                new WeatherForecast() { Id = 3 ,Name = "Lê Anh Tuấn 38", DateOfBirhtDay ="20/01/1995"},
+                new WeatherForecast() { Id = 4 ,Name = "Lê Anh Tuấn 39", DateOfBirhtDay ="20/01/1991"},
+            };
+            return Ok(result);
+        }
+
+        [HttpGet("create")]
+        public async Task<IActionResult> Create()
+        {
+            await _responseCacheService.RemoveCacheResponseAsync("/weatherforecast/getall");
+            return Ok();
         }
 
     }
